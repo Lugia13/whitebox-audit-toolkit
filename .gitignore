@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+.DS_Store
+
+# Scratch clones used while running advisory_cross_reference.py locally
+advisory-db/
