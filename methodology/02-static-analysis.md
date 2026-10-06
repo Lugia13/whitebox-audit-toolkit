@@ -3,22 +3,32 @@
 The core skill in a whitebox audit isn't finding a suspicious-looking line — it's
 following a security-relevant symbol (a config flag, a validation function, a trust
 boundary check) all the way from its declaration to the exact point where it's
-consumed or enforced, across file and even language boundaries.
+consumed or enforced, across file, module, and even repo boundaries.
 
-## Technique: grep-first, read-second
+## Technique: grep-first, read-second, in priority order
 
-Before reading a module end-to-end, grep broadly for the vocabulary of the control
-you're interested in:
+Before reading a module end-to-end, grep broadly for the vocabulary of the controls
+that matter most, roughly in this order:
+
+- **Authentication/authorization**: `verify`, `authenticate`, `authoriz`, `challenge`,
+  `nonce`, `signature`, `attest`, `capability`
+- **Trust/update chain**: `boot`, `manifest`, `rollback`, `security_cnt`, `update`,
+  `firmware`, `downgrade`
+- **Memory/parsing**: `unsafe`, `deserialize`, `decode`, `memcpy`, `sizeof`
+- **IPC/message boundaries**: `ipc`, plus the project's own message/command dispatch
+  keywords — these vary per codebase, so find the dispatch table first, then search
+  for how entries are added to it
 
 ```bash
 grep -rn "downgrade\|rollback\|security_cnt\|anti.?rollback" --include="*.c" --include="*.h" .
-grep -rn "verify\|authenticate\|trust" --include="*.rs" .
+grep -rEl "verify|signature|attest|rollback|manifest|nonce|authoriz|authenticat" --include="*.rs" --include="*.c" .
 ```
 
 This surfaces every file that touches the concept, including ones you wouldn't have
 guessed from directory names. If a tool like `ripgrep` (`rg`) isn't available in the
 environment, fall back to `grep -rn` — functionally equivalent for this purpose, just
-slower on very large trees.
+slower on very large trees. A keyword hit is a starting point for *where to look
+first* — it is never, by itself, a finding.
 
 ## Technique: cross-layer symbol tracing
 
@@ -67,12 +77,45 @@ indexing when reviewing parsers that handle externally-controlled input. A singl
 `.unwrap()` following a length check elsewhere in the function is usually fine — the
 goal of this pass is to find `.unwrap()` calls with *no* preceding validation.
 
-## Common static-analysis mistakes
+## Reading discipline once a hit is found
+
+1. **Read the whole function, not the matched line.** Keyword matches are an index,
+   not a diagnosis.
+2. **Read every doc comment for the function and compare it to what the code actually
+   does.** A documented contract ("returns error if X") that the implementation
+   doesn't actually deliver is one of the strongest and most defensible bug patterns
+   to report — you're not asserting your own opinion of correct behavior, you're
+   pointing out the code doesn't do what its own author said it does.
+3. **Check the sibling functions.** If this is one of N similar handlers/validators,
+   read all N and diff their logic mentally. Asymmetry is signal.
+4. **Trace both forward and backward.** Forward: what does this function actually
+   gate/protect? Backward: what calls it, and does the caller already filter out the
+   cases that would make this function's gap matter?
+5. **Don't stop at the first repo.** If the function's effect (e.g. a flag, a state
+   transition) is consumed by a *different* repo or component, go read that too
+   before judging impact.
+
+## Avoiding false signal
 
 - **Stopping at the first layer.** Finding `CONFIG_FOO` unset doesn't tell you the
   security impact until you've traced what code path that actually disables.
 - **Assuming a disabled feature is automatically a bug.** Many conditionally-compiled
   features fail closed by design; the interesting question is always "what's the
   fallback," not "is it off."
-- **Treating `unsafe` or `.unwrap()` counts as findings by themselves.** They're a
-  prioritization signal for where to look closer, not a conclusion.
+- **Treating `unsafe`/`.unwrap()`/keyword-hit counts as findings by themselves.**
+  They're a prioritization signal for where to look closer, not a conclusion. Most
+  hits, in a mature codebase, are fine.
+- **Auditing vendored code first.** Third-party code (clearly marked license headers
+  from upstream projects) is usually lower-value to audit directly — it's typically
+  already heavily reviewed, and a program will often (reasonably) decline reports
+  against upstream dependencies rather than the program's own integration code.
+  Identify it early and deprioritize it in favor of the project's own glue/integration
+  code, which is far more likely to contain novel, in-scope defects.
+- **Not tracking what you ruled out.** Track what you've checked and *why* it's fine,
+  not just what you found. A clean audit trail of "checked X, here's why it's fine" is
+  what lets you (or a reviewer) trust the final list of things you *didn't* rule out.
+
+## Output of this phase
+
+A short list of specific functions worth deep verification, each with a one-line note
+on why it was flagged and what's already been ruled out about it.

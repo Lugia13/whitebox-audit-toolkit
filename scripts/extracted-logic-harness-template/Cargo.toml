@@ -1,0 +1,9 @@
+[package]
+name = "extracted-logic-harness"
+version = "0.1.0"
+edition = "2021"
+
+# Add only the dependencies the specific logic under test actually needs.
+# Do not pull in the full target workspace — the point of this template is
+# isolation.
+[dependencies]

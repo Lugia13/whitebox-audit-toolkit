@@ -4,3 +4,7 @@ __pycache__/
 
 # Scratch clones used while running advisory_cross_reference.py locally
 advisory-db/
+
+# Rust build artifacts from the harness template
+target/
+Cargo.lock

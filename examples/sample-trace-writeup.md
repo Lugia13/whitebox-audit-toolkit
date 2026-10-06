@@ -1,7 +1,7 @@
 # Sample Trace: Config Flag → Enforcement Code
 
 This is a **generic, illustrative example** of the trace-to-ground-truth technique
-described in `methodology/02-static-analysis.md` and `03-build-system-analysis.md`.
+described in `methodology/02-static-analysis.md` and `04-build-system-analysis.md`.
 It does not describe any real codebase, program, or finding — it's a template for how
 a trace like this should read.
 
