@@ -1,19 +1,19 @@
 # Whitebox Audit Toolkit
 
 A structured, reproducible methodology for source-available ("whitebox") security
-audits of embedded firmware and Rust/C codebases — including targets that span
+audits of embedded firmware and Rust/C codebases including targets that span
 **multiple interdependent repositories**, common in embedded systems and IoT device
 ecosystems where a single trust boundary (a hardware root of trust, a device-to-cloud
-protocol) is implemented across several separately-maintained codebases.
+protocol) is implemented across several separately maintained codebases.
 
 Developed and refined during hands-on bug bounty research across mixed Rust/C/
-embedded-firmware ecosystems: application logic, TEE-style Trusted Applications,
+embedded firmware ecosystems: application logic, TEE-style Trusted Applications,
 RTOS firmware with secure-boot-style bootloaders, and shared wire-protocol
 definition crates.
 
 **This repository documents methodology, tooling, and reusable scripts only.** No
 vulnerability details, target names, or specific findings from any engagement are
-included — those remain subject to each program's responsible disclosure process.
+included those remain subject to each program's responsible disclosure process.
 
 Portfolio: [oussamasaddati.vercel.app](https://oussamasaddati.vercel.app)
 
@@ -22,10 +22,10 @@ Portfolio: [oussamasaddati.vercel.app](https://oussamasaddati.vercel.app)
 Most security research guidance assumes a single codebase. Real-world hardware/IoT
 products rarely look like that: a device's actual security boundary is usually split
 across a main application repo, a secure-element/TEE repo, a firmware repo, and one
-or more shared protocol-definition repos — each independently versioned, each with
+or more shared protocol-definition repos each independently versioned, each with
 its own build constraints, and each individually "fine" when read in isolation.
 
-The interesting bugs live in the *seams* — places where one side assumes an invariant
+The interesting bugs live in the *seams* places where one side assumes an invariant
 the other side doesn't actually guarantee, or where a layered control (Kconfig →
 macro → runtime check) looks complete at one layer but isn't actually wired through.
 This methodology is built around making those seams explicit and verifiable, rather
